@@ -215,7 +215,7 @@ with st.sidebar:
     st.markdown("### 📈 Model Evaluation Metrics")
 
     # 2. Model Metrics & Performance Cards
-    # (যদি একাধিক মডেলের ট্রেনিং মেট্রিক্স আগে থেকে জানা থাকে, তা এখানে কার্ড আকারে দেখানো যায়)
+
     m1, m2 = st.columns(2)
     m1.metric("Accuracy", "92.4%", delta="+1.2%")
     m2.metric("Precision", "90.8%")
@@ -332,20 +332,46 @@ with tab1:
 # TAB 2: Feature Importance & Model Insights
 # ---------------------------------------------------------
 with tab2:
-    st.markdown("Model Decision Factors (Feature Importance)")
-    st.write("### Which parameters most influence the model's predictions? Below is a breakdown of feature importance derived from the trained model.")
+    st.markdown("### Model Decision Factors (Feature Importance)")
+    st.write("This section provides insights into the most influential features affecting the model's predictions. Understanding these factors can help in making informed decisions and interventions.")
 
-    # 1. Feature Importance Chart Logic
-    if hasattr(model, 'feature_importances_'):
-        importances = model.feature_importances_
-        importance_df = pd.DataFrame({
-            'Feature': features,
-            'Importance (%)': importances * 100
-        }).sort_values(by='Importance (%)', ascending=False)
+    try:
+        # Determine the estimator from the pipeline if applicable
+        estimator = model
+        if hasattr(model, 'named_steps'):
+            estimator = list(model.named_steps.values())[-1]
 
-        st.bar_chart(importance_df.set_index('Feature'))
+        importances = None
 
-        st.markdown("#### Top Influential Factors Table")
-        st.dataframe(importance_df, use_container_width=True)
-    else:
-        st.warning("Selected model does not support feature importances calculation natively.")
+        # ১. Tree-based Model (Random Forest / Decision Tree)
+        if hasattr(estimator, 'feature_importances_'):
+            importances = estimator.feature_importances_
+
+        # ২. Linear / Logistic Regression / SVM
+        elif hasattr(estimator, 'coef_'):
+            importances = np.abs(estimator.coef_[0])
+
+        # chart
+        if importances is not None:
+            importance_df = pd.DataFrame({
+                'Feature': features,
+                'Importance Score': importances
+            }).sort_values(by='Importance Score', ascending=False)
+
+            # parcentage
+            importance_df['Importance (%)'] = (importance_df['Importance Score'] / importance_df['Importance Score'].sum()) * 100
+
+            # Bar Chart Visual
+            st.bar_chart(importance_df.set_index('Feature')['Importance (%)'])
+
+            st.markdown("#### 📋 Top Influential Factors Table")
+            st.dataframe(
+                importance_df[['Feature', 'Importance (%)']].style.format({'Importance (%)': '{:.2f}%'}),
+                use_container_width=True
+            )
+        else:
+            st.warning("Feature importance calculation is not supported for this specific model type.")
+
+    except Exception as e:
+        st.error("Feature Importance হিসাব করার সময় সমস্যা হয়েছে।")
+        st.code(str(e))
