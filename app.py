@@ -146,6 +146,28 @@ features = feature_info["features"]
 numerical_features = feature_info["numerical_features"]
 categorical_features = feature_info["categorical_features"]
 
+# Helper function to generate dynamic placeholders
+def get_feature_meta(feature_name):
+    name_lower = feature_name.lower()
+
+    # Placeholders & Help Text Mapping
+    if "id" in name_lower:
+        return "e.g. 1001", "Enter student identification number"
+    elif "age" in name_lower:
+        return "e.g. 20", "Enter age in years"
+    elif "gpa" in name_lower or "score" in name_lower or "mark" in name_lower:
+        return "e.g. 3.50 or 85", "Enter academic score/GPA"
+    elif "attend" in name_lower:
+        return "e.g. 85.5", "Enter attendance percentage (0 - 100)"
+    elif "hour" in name_lower or "study" in name_lower:
+        return "e.g. 15", "Enter weekly study hours"
+    elif "gender" in name_lower or "sex" in name_lower:
+        return "e.g. Male / Female", "Enter student gender"
+    elif "grade" in name_lower:
+        return "e.g. A, B, C", "Enter current grade"
+    else:
+        return f"Enter {feature_name}", f"Specify the {feature_name}"
+
 # ---------------------------------------------------------
 # Custom CSS for Modern UI/UX
 # ---------------------------------------------------------
@@ -210,7 +232,7 @@ with st.sidebar:
     st.markdown(f"• **Categorical Inputs:** `{len(categorical_features)}`")
 
     st.markdown("---")
-    st.info("💡 **Tip:** Ensure numerical values are accurately typed for precise model outputs.")
+    st.info("💡 **Tip:** Hover over the '?' icon on input fields for guidelines.")
 
 # ---------------------------------------------------------
 # Main Header
@@ -219,43 +241,55 @@ st.markdown("<h1 class='gradient-title'>🎓 Student Pass/Fail Prediction</h1>",
 st.markdown("<p style='text-align: center; color: #94A3B8; margin-bottom: 35px;'>Enter academic details below to predict performance with machine learning models.</p>", unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# Input Form (Clean 2-Column Grid Layout)
+# Input Form (Clean 2-Column Grid Layout with Placeholders)
 # ---------------------------------------------------------
 user_input = {}
 
 with st.form("prediction_form"):
     st.markdown("### 📝 Student Parameters")
 
-    # Grid structure for forms
     col1, col2 = st.columns(2, gap="medium")
 
-    # Process Numerical Features across 2 columns
+    # Process Numerical Features
     for idx, feature in enumerate(numerical_features):
         target_col = col1 if idx % 2 == 0 else col2
+        placeholder_text, help_text = get_feature_meta(feature)
 
         with target_col:
             val = st.text_input(
                 label=f"🔢 {feature}",
-                value="0",
+                value="",  # Kept empty so placeholder is visible
+                placeholder=placeholder_text,
+                help=help_text,
                 key=f"num_{feature}"
             )
             try:
-                if feature.lower() == "studentid":
-                    user_input[feature] = int(float(val))
+                # Fallback to 0.0 if empty or invalid
+                if val.strip() == "":
+                    val_num = 0.0
                 else:
-                    user_input[feature] = float(val)
+                    val_num = float(val)
+
+                if feature.lower() == "studentid":
+                    user_input[feature] = int(val_num)
+                else:
+                    user_input[feature] = val_num
+
             except ValueError:
                 st.error(f"Please enter a valid number for {feature}.")
                 user_input[feature] = 0.0
 
-    # Process Categorical Features across 2 columns
+    # Process Categorical Features
     for idx, feature in enumerate(categorical_features):
         target_col = col1 if idx % 2 == 0 else col2
+        placeholder_text, help_text = get_feature_meta(feature)
 
         with target_col:
             user_input[feature] = st.text_input(
                 label=f"🏷️ {feature}",
                 value="",
+                placeholder=placeholder_text,
+                help=help_text,
                 key=f"cat_{feature}"
             )
 
