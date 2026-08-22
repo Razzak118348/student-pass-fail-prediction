@@ -438,41 +438,66 @@ with tab2:
         st.code(str(e))
 
 # ---------------------------------------------------------
-# TAB 3: Trained Model Details (নতুন যুক্ত করা হয়েছে)
+# TAB 3: Trained Algorithms & Contribution Percentage
 # ---------------------------------------------------------
 with tab3:
-    st.markdown("### 🤖 Trained Machine Learning Models & Architecture")
-    st.write("আপনার সেভ করা `.pkl` ফাইল থেকে লোড করা মডেলগুলোর বিস্তারিত তথ্য নিচে দেওয়া হলো:")
+    st.markdown("### 🤖 Trained Machine Learning Algorithms & Weight Breakdown")
+    st.write("This section provides insights into the trained machine learning algorithms used in the model and their respective contribution percentages. Understanding the algorithmic composition can help in interpreting the model's decision-making process.")
 
-    # Extract Model Details Dynamically
-    model_type_name = type(model).__name__
+    # আসল অ্যালগরিদম চিহ্নিত করা
+    estimator = model
+    if hasattr(model, 'named_steps'):
+        estimator = list(model.named_steps.values())[-1]
 
-    col_a, col_b = st.columns(2)
-    with col_a:
-        st.info(f"**Primary Saved Model:** `{model_type_name}`")
-    with col_b:
-        st.success(f"**Total Features Trained:** `{len(features)}` Features")
+    algo_name = type(estimator).__name__
+
+    st.info(f"🎯 **Main Model Algorithm:** `{algo_name}`")
+
+    # ১. যদি একাধিক অ্যালগরিদমের সংমিশ্রণ (Ensemble / Voting Classifier) হয়ে থাকে:
+    if hasattr(estimator, 'estimators_'):
+        st.markdown("#### ⚖️ Algorithm Contribution Breakdown")
+
+        # Voting / Stacking Classifier এর Weights বের করা
+        weights = getattr(estimator, 'weights', None)
+
+        sub_algos = [type(e).__name__ for e in estimator.estimators_]
+
+        if weights is None:
+            # যদি সমান ওয়েট থাকে
+            weights = [1 / len(sub_algos)] * len(sub_algos)
+
+        weights_pct = [w * 100 / sum(weights) for w in weights]
+
+        algo_df = pd.DataFrame({
+            'Algorithm Name': sub_algos,
+            'Contribution (%)': weights_pct
+        })
+
+        # Donut/Bar Chart
+        st.bar_chart(algo_df.set_index('Algorithm Name'))
+
+        st.markdown("#### 📋 Percentage Table")
+        st.dataframe(algo_df.style.format({'Contribution (%)': '{:.2f}%'}), use_container_width=True)
+
+    # ২. যদি একক (Single Model) অ্যালগরিদম ব্যবহার করা হয়ে থাকে:
+    else:
+        st.success(f" Algorithm name :  **{algo_name}** ")
+
+        single_algo_df = pd.DataFrame({
+            'Algorithm Name': [algo_name],
+            'Decision Contribution': ['100% (Single Primary Classifier)'],
+            'Model Type': ['Standalone Model / Pipeline Classifier']
+        })
+        st.table(single_algo_df)
 
     st.markdown("---")
-    st.markdown("#### 🛠️ Internal Pipeline Algorithms & Preprocessors")
-
-    # Pipeline হলে অভ্যন্তরীণ সকল মডেল ও স্কেলিয়ারের নাম টেবিল আকারে দেখাবে
+    st.markdown("#### 🛠️ Internal Pipeline Infrastructure")
     if hasattr(model, 'named_steps'):
-        st.write("এই মডেলটি একটি **Scikit-Learn Pipeline**। এর ভেতরে বাস্তবায়িত প্রতিটি এলিমেন্ট:")
-
         step_data = []
         for step_name, step_obj in model.named_steps.items():
             step_data.append({
                 "Step Name": step_name.capitalize(),
-                "Algorithm Class": type(step_obj).__name__,
-                "Configuration Details": str(step_obj)
+                "Component Class": type(step_obj).__name__,
+                "Details": str(step_obj)
             })
-
         st.table(pd.DataFrame(step_data))
-    else:
-        st.write("এই প্রজেক্টে সরাসরি ব্যবহৃত মডেলটির ক্লাস অ্যালগরিদম:")
-        st.code(str(model))
-
-    st.markdown("---")
-    st.markdown("#### 📋 All Trained Features")
-    st.write(", ".join([f"`{f}`" for f in features]))
