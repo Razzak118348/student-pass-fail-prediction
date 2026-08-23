@@ -23,8 +23,8 @@ data = {
     'Extracurricular': np.random.randint(0, 2, n_samples),
     'Sports': np.random.randint(0, 2, n_samples),
     'Volunteering': np.random.randint(0, 2, n_samples),
-    'Midterm_Score': np.random.uniform(30, 100, n_samples), # 🆕 নতুন ফিচার
-    'Quiz_Score': np.random.uniform(30, 100, n_samples)     # 🆕 নতুন ফিচার
+    'Midterm_Score': np.random.uniform(30, 100, n_samples),
+    'Quiz_Score': np.random.uniform(30, 100, n_samples)
 }
 
 df = pd.DataFrame(data)
@@ -62,4 +62,4 @@ print(f"Model trained successfully! Accuracy: {accuracy*100:.2f}%")
 joblib.dump(model, "student_pass_fail_model.pkl")
 joblib.dump({"features": features}, "feature_info.pkl")
 
-print("✅ Success! 'student_pass_fail_model.pkl' and 'feature_info.pkl' created.")
+print("Success! 'student_pass_fail_model.pkl' and 'feature_info.pkl' created.")

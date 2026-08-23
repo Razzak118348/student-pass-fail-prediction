@@ -51,7 +51,7 @@ with st.sidebar:
 
     selected_model_name = st.selectbox(
         "Select Machine Learning Model",
-        ["Loaded Pipeline Model (Active)", "Logistic Regression (Simulated)", "Support Vector Machine (Simulated)"]
+        ["Loaded Pipeline Model (Active)"]
     )
 
     st.divider()
